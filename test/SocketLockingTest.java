@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SocketLockingTest {
   @Test
@@ -26,7 +26,7 @@ class SocketLockingTest {
 
     // when
     String message = "Hi";
-    createClientListeningForMessage(executorService, socket, latch, results);
+    createClientListeningForMessage(executorService, latch, results);
     assertTrue(send(socket, message));
 
     latch.await();
@@ -48,8 +48,8 @@ class SocketLockingTest {
 
     // when
     String message = "Hi";
-    createClientListeningForMessage(executorService, socket, latch, results);
-    createClientListeningForMessage(executorService, socket, latch, results);
+    createClientListeningForMessage(executorService, latch, results);
+    createClientListeningForMessage(executorService, latch, results);
     assertTrue(send(socket, message));
 
     latch.await();
@@ -65,8 +65,14 @@ class SocketLockingTest {
     }
   }
 
-  private void createClientListeningForMessage(ExecutorService executorService, Socket socket, CountDownLatch latch, CopyOnWriteArrayList<String> results) {
-    executorService.submit(() -> results.add(receive(socket, latch)));
+  private void createClientListeningForMessage(ExecutorService executorService, CountDownLatch latch, CopyOnWriteArrayList<String> results) throws IOException {
+    Socket socket = connect();
+    executorService.submit(() -> {
+      String messageReceived = receive(socket);
+      results.add(messageReceived);
+      latch.countDown();
+      return messageReceived;
+    });
   }
 
   private Socket connect() throws IOException {
@@ -80,12 +86,10 @@ class SocketLockingTest {
     return true;
   }
 
-  public String receive(Socket socket, CountDownLatch latch) {
+  public String receive(Socket socket) {
     try (InputStreamReader streamReader = new InputStreamReader(socket.getInputStream());
          BufferedReader reader = new BufferedReader(streamReader)) {
-      String message = reader.readLine();
-      latch.countDown();
-      return message;
+      return reader.readLine();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
