@@ -13,9 +13,12 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Start one of the servers (SimpleChatServerStream or SimpleChatServerWriterReader) and run these tests
+// one by one. On the Mac (Big Sur) these tests both pass with SimpleChatServerWriterReader. In theory, I
+// expected testSendAndReceiveOneClient to work with SimpleChatServerStream but actually this exhibits the
+// same blocking behaviour as I saw manually spinning up clients to send and receive messages.
 class SocketLockingTest {
   @Test
-  // this works
   void testSendAndReceiveOneClient() throws IOException, InterruptedException {
     // given
     int numberOfClients = 1;
