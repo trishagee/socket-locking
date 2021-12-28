@@ -1,14 +1,16 @@
 import java.io.BufferedReader;
+import java.io.Writer;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.nio.channels.Channels;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class SimpleChatServerStream {
-  ArrayList<PrintWriter> clientOutputStreams;
+  ArrayList<Writer> clientOutputStreams;
 
   public static void main(String[] args) {
     new SimpleChatServerStream().go();
@@ -22,7 +24,7 @@ public class SimpleChatServerStream {
 
       while (true) {
         SocketChannel clientSocket = serverSocketChannel.accept();
-        PrintWriter writer = new PrintWriter(Channels.newOutputStream(clientSocket));
+        Writer writer = new OutputStreamWriter(Channels.newOutputStream(clientSocket), StandardCharsets.UTF_8);
         clientOutputStreams.add(writer);
         Thread t = new Thread(new ClientHandler(clientSocket));
         t.start();
@@ -31,18 +33,18 @@ public class SimpleChatServerStream {
     } catch (Exception ex) {
       ex.printStackTrace();
     }
-  }
+  } // close go
 
   public void tellEveryone(String message) {
-    for (PrintWriter writer : clientOutputStreams) {
+    for (Writer writer : clientOutputStreams) {
       try {
-        writer.println(message);
+        writer.append(message).write("\n");
         writer.flush();
       } catch (Exception ex) {
         ex.printStackTrace();
       }
-    }
-  }
+    } // end while
+  } // close tellEveryone
 
   public class ClientHandler implements Runnable {
     BufferedReader reader;
@@ -51,12 +53,11 @@ public class SimpleChatServerStream {
     public ClientHandler(SocketChannel clientSocket) {
       try {
         socket = clientSocket;
-        InputStreamReader isReader = new InputStreamReader(Channels.newInputStream(socket));
-        reader = new BufferedReader(isReader);
+        reader = new BufferedReader(new InputStreamReader(Channels.newInputStream(socket), StandardCharsets.UTF_8));
       } catch (Exception ex) {
         ex.printStackTrace();
       }
-    }
+    } // close constructor
 
     public void run() {
       String message;
@@ -68,6 +69,6 @@ public class SimpleChatServerStream {
       } catch (Exception ex) {
         ex.printStackTrace();
       }
-    }
-  }
-}
+    } // close run
+  } // close inner class
+} // close class
